@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -eu
+
+USER="$( whoami )"
+HOME="<%= p('home_dir') %>/$USER"
+
+if [ -e "$HOME/.jump-container" ]; then
+  CONTAINER="$( cat "$HOME/.jump-container" )"
+else
+  CONTAINER="<%= p('default_container') %>"
+fi
+
+if [ -e "$HOME/.jump-pwd" ]; then
+  WORKDIR="$( cat "$HOME/.jump-pwd" )"
+else
+  WORKDIR="<%= p('default_workdir') %>"
+fi
+
+echo
+echo "Hello $USER, a fresh container is starting where you will be root."
+echo "Only changes in the home directory will be persisted when you disconnect."
+echo
+
+echo "  container = $CONTAINER"
+
+<% if p('env').length > 0 %>
+  echo -n "        env = "
+  <% prefix = "" %>
+  <% p('env').each do | k, v | %>
+    echo "<%= prefix %><%= k %>"
+    <% prefix = "              " %>
+  <% end %>
+<% end %>
+
+echo
+
+exec /var/vcap/packages/docker/bin/docker \
+  -H unix:///var/vcap/sys/run/docker/docker.sock \
+  run --rm -t -i \
+  -e SSH_AUTH_SOCK \
+  -e USER \
+  <% p('env').each do | k, v | %> -e <%= k %>="<%= v %>"<% end %> \
+  -v "$HOME":"/root" \
+  --workdir "$WORKDIR" \
+  "$CONTAINER"

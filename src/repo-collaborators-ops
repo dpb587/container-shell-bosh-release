@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -eu -o pipefail
+
+repo="$1"
+
+gh() { curl -sH "Authorization: token $GITHUB_API_TOKEN" "$1";}
+
+(
+  # @todo paginate me
+  for user in $( gh https://api.github.com/repos/$repo/collaborators | jq -r 'map(select(.permissions.push))[].login' ); do
+    gh https://api.github.com/users/$user/keys \
+      | jq --arg user "$user" -c '{"name":$user,"public_keys":(map(.key))}'
+  done
+) \
+  | jq -s '[{"type":"replace","path":"/instance_groups/0/jobs/name=jump/properties?/users","value":.}]'

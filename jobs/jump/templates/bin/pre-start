@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# trying to hide most everything...
+chmod -x /etc/update-motd.d/*
+rm /etc/legal
+#if grep -q 'PrintLastLog yes' /etc/ssh/sshd_config; then
+#  sed -i 's/PrintLastLog yes/PrintLastLog No/' /etc/ssh/sshd_config
+#  service ssh restart
+#fi
+
+# based on user_add from os-conf...
+<% p('users').each do |user_hash| %>
+  <%  user = user_hash['name']
+      public_keys = user_hash['public_keys'] || []
+      home = "/home/#{user}"
+
+      if user.nil? || user.empty?
+        raise "User must be configured with a 'name' attribute. '#{user_hash}'"
+      end
+
+      %>
+
+  if ! getent passwd <%=user%> > /dev/null; then
+    useradd --create-home <%=user%>
+  fi
+
+  chsh -s /var/vcap/jobs/jump/bin/shell <%=user%>
+  passwd -d <%=user%>
+
+  if grep -q 'bosh_sshers' /etc/group; then
+    usermod -G vcap,admin,bosh_sudoers,bosh_sshers <%=user%>
+  else
+    usermod -G vcap,admin,bosh_sudoers <%=user%>
+  fi
+
+  mkdir -p <%= p('home_dir') %>/<%= user %>
+
+  chmod 700 ~<%=user%>
+  mkdir -p ~<%=user%>/.ssh
+  chmod 700 ~<%=user%>/.ssh
+  rm -f ~<%=user%>/.ssh/authorized_keys
+
+  <% public_keys.each do |v| %>
+    echo '<%= v %>' >> ~<%= user %>/.ssh/authorized_keys
+  <% end %>
+
+  chown -R <%=user%> ~<%=user%>/.ssh
+  chmod 600 ~<%=user%>/.ssh/authorized_keys
+<% end %>
