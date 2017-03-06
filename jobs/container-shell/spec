@@ -1,0 +1,16 @@
+name: container-shell
+templates:
+  bin/shell: bin/shell
+  bin/pre-start: bin/pre-start
+properties:
+  home_dir:
+    description: "A path for home directories"
+    default: /var/vcap/store/container-home
+  default_container:
+    description: "Default container"
+    default: "ubuntu:16.04"
+  env:
+    description: "Custom environment variables to propagate"
+    default: {}
+  users:
+    description: "Array of users"

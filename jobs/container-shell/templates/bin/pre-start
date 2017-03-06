@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -eu
+
+# trying to hide most everything...
+chmod -x /etc/update-motd.d/*
+rm /etc/legal
+
+mkdir -p /var/vcap/store/container-home
+
+# based on user_add from os-conf...
+<% p('users').each do |user| %>
+  <% home = "#{p('home_dir')}/#{user}" %>
+  if ! getent passwd <%= user %> > /dev/null; then
+    useradd --create-home --home <%= home %> <%= user %>
+  fi
+
+  chsh -s /var/vcap/jobs/container-shell/bin/shell <%= user %>
+  passwd -d <%= user %>
+
+  if grep -q 'bosh_sshers' /etc/group; then
+    usermod -G vcap,bosh_sshers <%= user %>
+  else
+    usermod -G vcap <%= user %>
+  fi
+
+  # reset from stemcell change
+  if ! grep -q "source ~/.shell-ps1"; then
+    sed -Ei '\@^source /etc/profile.d/00-bosh-ps1@d' "<%= home %>/.bashrc"
+
+    cat > "<%= home %>/.shell-ps1" <<'EOF'
+# only if interactive
+[ ! -z "$PS1" ] || return
+
+bosh_instance="$VCAP_DEPLOYMENT"
+
+PS1="$bosh_instance:\\w\\\$ "
+
+unset bosh_instance
+EOF
+
+    echo "source ~/.shell-ps1" >> "<%= home %>/.bashrc"
+  fi
+<% end %>

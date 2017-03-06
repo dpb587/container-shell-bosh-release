@@ -6,14 +6,8 @@ instance_groups:
   jobs:
   - name: docker
     release: docker
-  - name: login_banner
-    release: os-conf
-    properties:
-      login_banner:
-        text: |
-          Welcome to jump.bosh-lite.local!
-  - name: jump
-    release: demo-jump
+  - name: container-shell
+    release: container-shell
     properties:
       env:
         BOSH_ENVIRONMENT: 192.168.50.4
@@ -41,29 +35,42 @@ instance_groups:
           yDd2GtrGsguQXM2op+4LqEdHef57g7vwolZejJqN776Xu/lZtCTp01+HTA==
           -----END CERTIFICATE-----
       users:
-      - name: dpb587
-        public_keys:
-        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDGUHLA4SIZ1chp7uj8ejXDERnxL1q+BK08yeh+xewQGyhuzTD7YJtzofT3ctLNSrUNJQI+w50sDhdeNkI9fOaX8BxerRYW9osw4Yr0IWesFhtdmSI6WvpiEKp9Tp66tiZAcnHoxujrfVatU1Pqv+u383s24dn/DJJ0osLabFgQMQHWH0E4H/JCZUUkIwAtrg5ssSP/aPKl17mGPbMKYhM8O9su9l6Vu9tgOBdz4oFEFAGoPpU5kLd/tfcSqmhcArF7dHLLLbuvkSFPh0fZJTFThNDCBD46M9xNg6ycSXDi6Qi4kx6QVpbosUudNazsY7jtC4zx11sR2+vveoynbjA893cnF43tz/2CxN/3ljfxc8JOotqN2qY54G9wBFtYDBuHtJpuxnY6i87DWI4SS6FyqZcjOIZcKfrlu7FSpqeVI6VdP0g72lD4So423/gIbLWFK9zG/kKRw5zMxf2SJ3xNnWygq3Tw4vOgWQWmwhONPNAaWaL0lZ/0F1crijUgdji5+2HUHcKvcVLIIClh3v53LOirK/sXg6mFWHerFTXZ38MS5b7s7cCFyOse/nPlBNuKY50cIHC0IhmSgUfdXb2WIPSgd5XBhB86I30wotdlMdMpXzdVdjdG3aQcXjppjJ7VXyGduoTJX0xMu3Oi/ewoStdnQ25/9lklWABRyAW2/w== dpb587-20160719a@dpb587-20160719a
-  name: jump
+      - dpb587
+  - name: sshd_settings
+    release: ssh-conf
+    properties:
+      disable_authorized_keys: true
+      disable_password_authentication: true
+      disable_print_last_log: true
+      log_level: DEBUG
+      trusted_ca: ((trusted_ca))
+      host_key:
+        rsa: ((host_key_rsa.private_key))
+  name: jumpbox
   networks:
   - name: default
   persistent_disk_size: 1024
   stemcell: default
   vm_type: default
-name: jump
+name: jumpbox
 releases:
 - name: docker
+  version: 29.0.0
+  url: https://bosh.io/d/github.com/cf-platform-eng/docker-boshrelease?v=29.0.0
+  sha1: a1ad9c8ce6c0340c8b67c76da0a2578d6e170489
+- name: container-shell
   version: latest
-- name: os-conf
-  version: latest
-- name: demo-jump
+- name: ssh-conf
   version: latest
 stemcells:
 - alias: default
   os: ubuntu-trusty
-  version: '3262.2'
+  version: latest
 update:
   canaries: 1
   canary_watch_time: 1000-60000
   max_in_flight: 1
   update_watch_time: 1000-60000
+variables:
+  - name: host_key_rsa
+    type: rsa

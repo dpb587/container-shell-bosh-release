@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu
+
+export CONTAINER_USER="$( whoami )"
+export VCAP_DEPLOYMENT="<%= spec.deployment %>"
+export VCAP_INSTANCE_AZ="<%= spec.az %>"
+export VCAP_INSTANCE_NAME="<%= spec.job.name %>"
+export VCAP_INSTANCE_ID="<%= spec.id %>"
+
+home="<%= p('home_dir') %>/$CONTAINER_USER"
+
+if [ -e "$home/.shell-container" ]; then
+  container="$( cat "$home/.shell-container" )"
+else
+  container="<%= p('default_container') %>"
+fi
+
+echo
+echo "Welcome, $CONTAINER_USER. This is a $container container."
+echo "Your home directory is persisted after you disconnect."
+echo
+
+<% if p('env').length > 0 %>
+  <% prefix = "" %>
+  <% p('env').each do | k, v | %>
+    <% prefix = ", " %>
+    export <%= k %>="<%= v %>"
+  <% end %>
+<% end %>
+
+exec /var/vcap/packages/docker/bin/docker \
+  -H unix:///var/vcap/sys/run/docker/docker.sock \
+  run --rm -t -i \
+  -e SSH_AUTH_SOCK \
+  -e CONTAINER_USER \
+  -e VCAP_DEPLOYMENT -e VCAP_INSTANCE_AZ -e VCAP_INSTANCE_NAME -e VCAP_INSTANCE_ID \
+  <% p('env').each do | k, v | %>-e <%= k %> <% end %>\
+  -v "$( dirname "${SSH_AUTH_SOCK:-/tmp/ssh-missing}"):$( dirname "${SSH_AUTH_SOCK:-/tmp/ssh-missing}")" \
+  -v "$home":"/root" \
+  "$container"
