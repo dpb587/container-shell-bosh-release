@@ -2,7 +2,7 @@
 
 set -eu
 
-export CONTAINER_USER="$( whoami )"
+export CONTAINER_USER="$1"
 export VCAP_DEPLOYMENT="<%= spec.deployment %>"
 export VCAP_INSTANCE_AZ="<%= spec.az %>"
 export VCAP_INSTANCE_NAME="<%= spec.job.name %>"
