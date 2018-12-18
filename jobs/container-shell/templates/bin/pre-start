@@ -4,12 +4,12 @@ set -eu
 
 # trying to hide most everything...
 chmod -x /etc/update-motd.d/*
-rm /etc/legal
+rm -f /etc/legal
 
 mkdir -p /var/vcap/store/container-home
 
 # based on user_add from os-conf...
-<% p('users').each do |user| %>
+<% p('users', []).each do |user| %>
   <% home = "#{p('home_dir')}/#{user}" %>
   if ! getent passwd <%= user %> > /dev/null; then
     useradd --create-home --home <%= home %> <%= user %>
